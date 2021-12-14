@@ -38,6 +38,7 @@ class FeedbackModel(BaseModel):
         orm_mode = True
 
 
+# TODO: not used yet
 class FeedbackItem:
     def __init__(self, date, priority, channel, product, group_id, lesson_id, reporter, content, source=None):
         self.date: str = date
@@ -49,6 +50,9 @@ class FeedbackItem:
         self.reporter: str = reporter
         self.content: str = content
         self.source: str = source
+
+    def __repr__(self):
+        return f"<FeedbackItem (date={self.date}, content={self.content})>"
 
 
 class FeedbackDAO:
