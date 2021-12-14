@@ -56,26 +56,31 @@ class FeedbackItem:
 
 
 class FeedbackDAO:
-    def __init__(self, table_url: str = None):
+    def __init__(self, table_url: str = None, sheet: str = None):
         self.table_url: str = table_url
-        self.cast_numbers: str = "?cast_numbers=group_id,lesson_id"
+        self.cast_numbers: str = "cast_numbers=group_id,lesson_id"
+        self.sheet: str = sheet
+
+    def _add_sheet(self, prefix: str = "?"):
+        return prefix + f"sheet={self.sheet}" if self.sheet else ""
 
     def get_all(self):
-        response = requests.get(self.table_url + self.cast_numbers)
+        s = self.table_url + "?" + self.cast_numbers + self._add_sheet("&")
+        response = requests.get(s)
         assert response.status_code == HTTPStatus.OK, "Получение строк: код ответа не равен 200"
         # return response.json()
         return [FeedbackModel.parse_obj(line) for line in response.json()]
 
     def get_one(self, row_number: int):
-        r_url = self.table_url + f"?limit=1&offset={row_number}"
-        response = requests.get(r_url)
+        s = self.table_url + f"?limit=1&offset={row_number}" + "?" + self.cast_numbers + self._add_sheet("&")
+        response = requests.get(s)
         assert response.status_code == HTTPStatus.OK
         # return response.json()
         return FeedbackModel.parse_obj(response.json()[0])
 
     def create(self, record: FeedbackModel):
         response = requests.post(
-            self.table_url,
+            self.table_url + "?" + self.cast_numbers + self._add_sheet("&"),
             json={"data": [record.dict()]},
             headers={"Content-Type": "application/json"}
         )
@@ -85,21 +90,19 @@ class FeedbackDAO:
         return response
 
     def update(self, record: dict, column: str, value):
-        r_url = self.table_url + f"/{column}/{value}"
         response = requests.put(
-            r_url,
+            self.table_url + f"/{column}/{value}" + "?" + self.cast_numbers + self._add_sheet("&"),
             json={"data": [record]},
             headers={"Content-Type": "application/json"}
         )
         print(response.status_code)
         print(response.json())
-        assert response.status_code == HTTPStatus.OK, "ОБновление строки: код ответа не равен 200"
+        assert response.status_code == HTTPStatus.OK, "Обновление строки: код ответа не равен 200"
         return response
 
     def delete(self, column: str, value):
-        r_url = self.table_url + f"/{column}/{value}"
         response = requests.delete(
-            r_url,
+            self.table_url + f"/{column}/{value}" + self._add_sheet(),
             headers={"Content-Type": "application/json"}
         )
         print(response.status_code)
@@ -107,25 +110,37 @@ class FeedbackDAO:
         assert response.status_code == HTTPStatus.OK, "Удаление строки: код ответа не равен 200"
         return response
 
+    def get_sheets(self):
+        s = self.table_url + "/sheets"
+        response = requests.get(s)
+        assert response.status_code == HTTPStatus.OK, "Получение списка листов: код ответа не равен 200"
+        return response.json()["sheets"]
+        # return [FeedbackModel.parse_obj(line) for line in response.json()]
+
 
 if __name__ == "__main__":
-    report_table = FeedbackDAO(my_table_url)
-    print("Все строки:")
-    print(*report_table.get_all(), sep='\n')
-    print("\nОдна строка:")
-    print(report_table.get_one(0))
+    report_table = FeedbackDAO(my_table_url)  # , sheet="Лист1")
+    # print("Все строки:")
+    # print(*report_table.get_all(), sep='\n')
+    #
+    # print("\nОдна строка:")
+    # print(report_table.get_one(0))
+    #
+    # report_table.create(FeedbackModel.parse_obj(new_record))
+    # print("Все строки после добавления:")
+    # print(*report_table.get_all(), sep='\n')
+    #
+    # report_table.update(update_record, "reporter", "Anonim")
+    # print("Все строки после изменения:")
+    # print(*report_table.get_all(), sep='\n')
+    #
+    # report_table.delete("reporter", "Goldsmith")
+    # print("Все строки после удаления:")
+    # print(*report_table.get_all(), sep='\n')
 
-    report_table.create(FeedbackModel.parse_obj(new_record))
-    print("Все строки после добавления:")
-    print(*report_table.get_all(), sep='\n')
+    sheets = report_table.get_sheets()
+    print("Все листы книги:", sheets)
 
-    report_table.update(update_record, "reporter", "Anonim")
-    print("Все строки после изменения:")
-    print(*report_table.get_all(), sep='\n')
-
-    report_table.delete("reporter", "Goldsmith")
-    print("Все строки после удаления:")
-    print(*report_table.get_all(), sep='\n')
 
 
 # date='9.12.2021',
