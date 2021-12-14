@@ -23,6 +23,19 @@ update_record = {
 }
 
 
+first_row = [
+    "date",
+    "priority",
+    "channel",
+    "product",
+    "group_id",
+    "lesson_id",
+    "reporter",
+    "content",
+    "source"
+]
+
+
 class FeedbackModel(BaseModel):
     date: str
     priority: int
@@ -59,7 +72,10 @@ class FeedbackDAO:
     def __init__(self, table_url: str = None, sheet: str = None):
         self.table_url: str = table_url
         self.cast_numbers: str = "cast_numbers=group_id,lesson_id"
-        self.sheet: str = sheet
+        self.sheet = None
+        if sheet and (sheet not in self.get_sheets()):
+            self.sheet = None
+            print(f"List with name={sheet} does not exist, we'll work with the first list in the book")
 
     def _add_sheet(self, prefix: str = "?"):
         return prefix + f"sheet={self.sheet}" if self.sheet else ""
@@ -117,9 +133,26 @@ class FeedbackDAO:
         return response.json()["sheets"]
         # return [FeedbackModel.parse_obj(line) for line in response.json()]
 
+    def create_sheet(self, sheet: str):
+        """
+        Creates a new list (requires a special plan of usage Google docs)
+        """
+        s = self.table_url + "/sheet"
+        response = requests.post(
+            s,
+            json={
+                "name": sheet,
+                "first_row": first_row
+            },
+            headers={"Content-Type": "application/json"}
+        )
+        assert response.status_code == HTTPStatus.CREATED, "Добавление нового листа: код ответа не равен 201"
+        # print(response.status_code)
+        return response.json()
+
 
 if __name__ == "__main__":
-    report_table = FeedbackDAO(my_table_url)  # , sheet="Лист1")
+    report_table = FeedbackDAO(my_table_url, sheet="sheet5")  # , sheet="Лист1")
     # print("Все строки:")
     # print(*report_table.get_all(), sep='\n')
     #
@@ -138,9 +171,10 @@ if __name__ == "__main__":
     # print("Все строки после удаления:")
     # print(*report_table.get_all(), sep='\n')
 
+    # print(report_table.create_sheet("Лист3"))
+
     sheets = report_table.get_sheets()
     print("Все листы книги:", sheets)
-
 
 
 # date='9.12.2021',
