@@ -53,7 +53,18 @@ class FeedbackModel(BaseModel):
 
 # TODO: not used yet
 class FeedbackItem:
-    def __init__(self, date, priority, channel, product, group_id, lesson_id, reporter, content, source=None):
+    def __init__(
+            self,
+            date=None,
+            priority=None,
+            channel=None,
+            product=None,
+            group_id=None,
+            lesson_id=None,
+            reporter=None,
+            content=None,
+            source=None
+    ):
         self.date: str = date
         self.priority: int = priority
         self.channel: str = channel
@@ -66,6 +77,23 @@ class FeedbackItem:
 
     def __repr__(self):
         return f"<FeedbackItem (date={self.date}, content={self.content})>"
+
+    def clear(self):
+        self.date = None
+        self.priority = None
+        self.channel = None
+        self.product = None
+        self.group_id = None
+        self.lesson_id = None
+        self.reporter = None
+        self.content = None
+        self.source = None
+
+    def is_ready(self):
+        if self.channel and self.channel and self.product and self.group_id \
+                and self.lesson_id and self.reporter and self.content:
+            return True
+        return False
 
 
 class FeedbackDAO:
@@ -153,16 +181,16 @@ class FeedbackDAO:
 
 if __name__ == "__main__":
     report_table = FeedbackDAO(my_table_url, sheet="sheet5")  # , sheet="Лист1")
-    # print("Все строки:")
-    # print(*report_table.get_all(), sep='\n')
-    #
+    print("Все строки:")
+    print(*report_table.get_all(), sep='\n')
+
     # print("\nОдна строка:")
     # print(report_table.get_one(0))
-    #
-    # report_table.create(FeedbackModel.parse_obj(new_record))
-    # print("Все строки после добавления:")
-    # print(*report_table.get_all(), sep='\n')
-    #
+
+    report_table.create(FeedbackModel.parse_obj(new_record))
+    print("Все строки после добавления:")
+    print(*report_table.get_all(), sep='\n')
+
     # report_table.update(update_record, "reporter", "Anonim")
     # print("Все строки после изменения:")
     # print(*report_table.get_all(), sep='\n')
@@ -173,8 +201,8 @@ if __name__ == "__main__":
 
     # print(report_table.create_sheet("Лист3"))
 
-    sheets = report_table.get_sheets()
-    print("Все листы книги:", sheets)
+    # sheets = report_table.get_sheets()
+    # print("Все листы книги:", sheets)
 
 
 # date='9.12.2021',
