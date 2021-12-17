@@ -63,7 +63,8 @@ class FeedbackItem:
             lesson_id=None,
             reporter=None,
             content=None,
-            source=None
+            source=None,
+            channel_id=None
     ):
         self.date: str = date
         self.priority: int = priority
@@ -74,6 +75,7 @@ class FeedbackItem:
         self.reporter: str = reporter
         self.content: str = content
         self.source: str = source
+        self.channel_id: str = channel_id
 
     def __repr__(self):
         return f"<FeedbackItem (date={self.date}, content={self.content})>"
@@ -88,6 +90,7 @@ class FeedbackItem:
         self.reporter = None
         self.content = None
         self.source = None
+        self.channel_id = None
 
     def is_ready(self):
         if self.channel and self.channel and self.product and self.group_id \
@@ -95,6 +98,19 @@ class FeedbackItem:
             return True
         return False
 
+    def dict(self):
+        return {
+            'date': self.date,
+            'priority': self.priority,
+            'channel': self.channel,
+            'product': self.product,
+            'group_id': self.group_id,
+            'lesson_id': self.lesson_id,
+            'reporter': self.reporter,
+            'content': self.content,
+            'source': self.source,
+            'channel_id': self.channel_id
+        }
 
 class FeedbackDAO:
     def __init__(self, table_url: str = None, sheet: str = None):
