@@ -1,7 +1,9 @@
 certifi==2021.10.8
 charset-normalizer==2.0.9
 idna==3.3
+ngrok==0.0.1
 pydantic==1.8.2
+python-dotenv==0.19.2
 requests==2.26.0
 slack-bolt==1.11.0
 slack-sdk==3.13.0

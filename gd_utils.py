@@ -1,10 +1,11 @@
+import os
 import requests
 from http import HTTPStatus
 from pydantic import BaseModel
 from typing import Optional
+from dotenv import load_dotenv, find_dotenv
 
-# my_table_url = "https://docs.google.com/spreadsheets/d/1IlBohmQ9aY8HfarZppPzoOapLct9mm7WFEFvmsODGl8/edit?usp=sharing"
-my_table_url = "https://sheetdb.io/api/v1/fvrwdnv55a5pt"
+load_dotenv(find_dotenv())
 
 new_record = {
     "date": '14.12.2021',
@@ -21,7 +22,6 @@ new_record = {
 update_record = {
     "reporter": 'Goldsmith',
 }
-
 
 first_row = [
     "date",
@@ -51,7 +51,6 @@ class FeedbackModel(BaseModel):
         orm_mode = True
 
 
-# TODO: not used yet
 class FeedbackItem:
     def __init__(
             self,
@@ -196,16 +195,16 @@ class FeedbackDAO:
 
 
 if __name__ == "__main__":
-    report_table = FeedbackDAO(my_table_url, sheet="sheet5")  # , sheet="Лист1")
+    report_table = FeedbackDAO(os.getenv("MY_TABLE_URL"))  #, sheet="sheet5")  # , sheet="Лист1")
     print("Все строки:")
     print(*report_table.get_all(), sep='\n')
 
     # print("\nОдна строка:")
     # print(report_table.get_one(0))
 
-    report_table.create(FeedbackModel.parse_obj(new_record))
-    print("Все строки после добавления:")
-    print(*report_table.get_all(), sep='\n')
+    # report_table.create(FeedbackModel.parse_obj(new_record))
+    # print("Все строки после добавления:")
+    # print(*report_table.get_all(), sep='\n')
 
     # report_table.update(update_record, "reporter", "Anonim")
     # print("Все строки после изменения:")

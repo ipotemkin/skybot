@@ -1,31 +1,29 @@
 from slack_bolt import App
-from credentials import BOT_TOKEN, SIGNING_SECRET, SLACK_APP_TOKEN
-import ssl as ssl_lib
-# import certifi
-from slack_sdk.web import WebClient
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from utils import parse_channel, extract_source
 import re
-from gd_utils import FeedbackItem, FeedbackModel, FeedbackDAO, my_table_url
+from gd_utils import FeedbackItem, FeedbackDAO
 from datetime import datetime
 from views import add_error_msg, blocks_template, msg_add_priority
 from views import register_view, product_view, group_id_view, priority_view, lesson_id_view
+import os
+from dotenv import load_dotenv, find_dotenv
 
-report_table = FeedbackDAO(my_table_url)
+load_dotenv(find_dotenv())
+
+# an object to write feedback data to a google sheets table
+report_table = FeedbackDAO(os.getenv("MY_TABLE_URL"))
+
+# a register of feedback and other data of actual conversations with the bot
 feedback_data = {}
 
-# ssl_lib._create_default_https_context = ssl_lib._create_unverified_context
-
-# ssl_lib.create_default_context(cafile=certifi.where())
-app = App(
-    token=BOT_TOKEN,
-    # signing_secret=SIGNING_SECRET,
-    # client=WebClient(),
-    # ssl_check_enabled=False
-)
+app = App(token=os.getenv('BOT_TOKEN'))
 
 
 def kill_buttons(body, client):
+    """
+    updates a message removing buttons
+    """
     # new_blocks = body['message']['blocks'][0]
     blocks_text = body['message']['blocks'][0]['text']['text']
     # print(blocks_text)
@@ -42,17 +40,26 @@ def kill_buttons(body, client):
 
 
 def get_channel_name(channel_id, client):
+    """
+    returns a channel name with given ID
+    """
     conv_info = client.conversations_info(channel=channel_id)
     return conv_info['channel']['name']
 
 
 def get_user_name(user_id, client):
+    """
+    returns a user name with given ID
+    """
     user_info = client.users_info(user=user_id)
     # print(user_info)
     return user_info['user']['name']
 
 
-def create_feedback_msg(current_feedback: FeedbackItem):
+def create_feedback_msg(current_feedback: FeedbackItem) -> str:
+    """
+    makes a template message
+    """
     msg = f"Запись:\n" \
         f"date: {current_feedback.date}\n" \
         f"priority: {current_feedback.priority}\n" \
@@ -66,16 +73,7 @@ def create_feedback_msg(current_feedback: FeedbackItem):
     return msg
 
 
-# @app.message("hello")
-# def message_hello(message, say):
-#     print("Прочитал сообщение hello")
-#     # say() sends a message to the channel where the event was triggered
-#     say(f"Hey there <@{message['user']}>!")
-#
-
-# @app.message("ошибка")
-# @app.message("Ошибка")
-# def message_error(message, say):
+# entry point one !
 @app.message(re.compile("([О,о]шибк*)"))
 @app.message(re.compile("([О,о]шибочк*)"))
 @app.message(re.compile("([О,о]шипк*)"))  # if a user made a typing error
@@ -160,12 +158,6 @@ def handle_yes_to_error_register(ack, body, logger, say, client):
 
         register_view['blocks'].append(priority_view)
 
-        # product_plh = "Укажите профессию"
-        # lesson_id_plh = "Укажите номер урока"
-        # group_id_plh = "Укажите номер потока"
-        # if not FEEDBACK.lesson_id:
-        #     say("Укажите номер урока")
-
         res = client.views_open(
             # Pass a valid trigger_id within 3 seconds of receiving it
             trigger_id=body["trigger_id"],
@@ -175,10 +167,10 @@ def handle_yes_to_error_register(ack, body, logger, say, client):
         del register_view['blocks'][0:6]
         feedback_data[res['view']['id']] = current_feedback
 
-    print(res)
-    # обновляем код у записи результата
+    # print(res)
+    # обновляем код у записи результата, чтобы не потерять разговор
     del feedback_data[body['container']['message_ts']]
-    print(feedback_data)
+    # print(feedback_data)
 
     logger.info(body)
 
@@ -186,8 +178,8 @@ def handle_yes_to_error_register(ack, body, logger, say, client):
 @app.view("register_view")
 def handle_submission(ack, body, client, view, logger, say):
     ack()
-    print("handle_submission:body", body)
-    print("handle_submission:view", view)
+    # print("handle_submission:body", body)
+    # print("handle_submission:view", view)
 
     current_feedback = feedback_data[view['id']]
 
@@ -200,24 +192,25 @@ def handle_submission(ack, body, client, view, logger, say):
     if not current_feedback.lesson_id:
         current_feedback.lesson_id = view['state']['values']["input_lesson_id"]["lesson_id_input"]['value']
 
-    print(view)
-    print(view['state']['values'])
+    # print(view)
+    # print(view['state']['values'])
 
     # current_feedback.priority = view['state']['values']["input_priority"]["priority_input"]['value']
     current_feedback.priority = view['state']['values']['select_priority']['input_priority']["selected_option"]['value']
 
-    say(create_feedback_msg(current_feedback), channel=current_feedback.channel_id)
+    # say(create_feedback_msg(current_feedback), channel=current_feedback.channel_id)
     say("Сообщение об ошибке записано, спасибо!", channel=current_feedback.channel_id)
     report_table.create(current_feedback)
 
     del feedback_data[view['id']]
-    print(feedback_data)
+    # print(feedback_data)
 
     # try:
     #     client.chat_postMessage(channel=body["user"]['id'], text=msg)
     #     logger.info(body)
     # except Exception as e:
     #     logger.exception(f"Failed to post a message {e}")
+    logger.info(body)
 
 
 @app.view({'type': 'view_closed', 'callback_id': 'register_view'})
@@ -230,6 +223,8 @@ def handle_view_closed(ack, body, client, view, logger, say):
         " (должно содержать слово *ошибка* или *опечатка*).\nИли наберите команду */ошибка*",
         channel=current_feedback.channel_id
     )
+    del feedback_data[view['id']]
+    # print(feedback_data)
     logger.info(body)
 
 
@@ -239,20 +234,20 @@ def handle_no_to_error_register(ack, body, logger, say, client):
     kill_buttons(body, client)
     say("Я Вас понял. Извините за беспокойство")
     del feedback_data[body['container']['message_ts']]
-    print(feedback_data) # debug
+    # print(feedback_data) # debug
     logger.info(body)
 
 
 def handle_button_priority(body, say, priority):
     current_feedback = feedback_data[body['container']['message_ts']]
     current_feedback.priority = priority
-    print(body)
-    say(create_feedback_msg(current_feedback))
+    # print(body)
+    # say(create_feedback_msg(current_feedback))
     say("Сообщение об ошибке записано, спасибо!", channel=current_feedback.channel_id)
     report_table.create(current_feedback)
 
     del feedback_data[body['container']['message_ts']]
-    print(feedback_data)
+    # print(feedback_data)
     # say(blocks=msg_add_priority['blocks'])
 
 
@@ -261,13 +256,6 @@ def handle_button_priority_1(ack, body, logger, say, client):
     ack()
     kill_buttons(body, client)
     handle_button_priority(body, say, 1)
-    # current_feedback = feedback_data[body['container']['message_ts']]
-    # current_feedback.priority = "1"
-    # print(body)
-    # say(create_feedback_msg(current_feedback))
-    # del feedback_data[body['container']['message_ts']]
-    # print(feedback_data)
-    # # say(blocks=msg_add_priority['blocks'])
     logger.info(body)
 
 
@@ -331,13 +319,10 @@ def handle_some_command(ack, body, logger, say):
 @app.action("input_priority")
 def handle_input_priority_action(ack, body, view, logger):
     ack()
-    print("body:", body)
-    print("view:", view)
+    # print("body:", body)
+    # print("view:", view)
     logger.info(body)
 
 
 if __name__ == "__main__":
-    SocketModeHandler(app, SLACK_APP_TOKEN).start()
-    # app.start(port=3000)
-    # print(ssl_context)
-    # print(certifi.where())
+    SocketModeHandler(app, os.getenv('SLACK_APP_TOKEN')).start()

@@ -46,15 +46,12 @@ def parse_channel(raw_str: str):
     return {"product": product, "group_id": group_id, "lesson_id": lesson_id}
 
 
-def extract_source(raw_str: str):
+def extract_source(raw_str: str) -> str:
     """
-    parses a channel name into product, group_id, lesson_id
-    :param raw_str:  a raw channel name
-    :return: a dict with product, group_id, lesson_id
+    extracts a link from the given string
     """
     source_obj = re.search(r'http[^,\s>]*', raw_str)
     source = source_obj.group(0).strip() if source_obj else None
-
     return source
 
 
@@ -69,6 +66,7 @@ def parse_channel_msg(raw_str: str):
 
 
 if __name__ == "__main__":
+    # for debug
     # print(s1, parse_channel(s1))
     # parse_channel_msg(s1)
     #

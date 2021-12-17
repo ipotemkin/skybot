@@ -3,3 +3,6 @@
 specs
 __pycache__
 ngrok
+.env
+app.py
+credentials.py
