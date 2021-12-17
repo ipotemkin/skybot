@@ -6,3 +6,4 @@ ngrok
 .env
 app.py
 credentials.py
+cacert.pem
