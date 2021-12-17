@@ -235,7 +235,7 @@ lesson_id_view = {
     }
 }
 
-priority_view = {
+priority_view_old = {
     "type": "input",
     "block_id": "input_priority",
     "label": {"type": "plain_text", "text": "Насколько серьезная проблема?"},
@@ -247,7 +247,7 @@ priority_view = {
     }
 }
 
-priority_view_new = {
+priority_view = {
     "type": "section",
     "block_id": "select_priority",
     "text": {
@@ -287,6 +287,14 @@ priority_view_new = {
                 "value": "3"
             }
         ],
-        "action_id": "input_priority"
+        "action_id": "input_priority",
+        "initial_option": {
+            "text": {
+                "type": "plain_text",
+                "text": "3 - Мелкая",
+                "emoji": True
+            },
+            "value": "3"
+        }
     }
 }

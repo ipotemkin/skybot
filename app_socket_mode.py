@@ -200,9 +200,12 @@ def handle_submission(ack, body, client, view, logger, say):
     if not current_feedback.lesson_id:
         current_feedback.lesson_id = view['state']['values']["input_lesson_id"]["lesson_id_input"]['value']
 
-    current_feedback.priority = view['state']['values']["input_priority"]["priority_input"]['value']
+    print(view)
+    print(view['state']['values'])
 
-    print(body)
+    # current_feedback.priority = view['state']['values']["input_priority"]["priority_input"]['value']
+    current_feedback.priority = view['state']['values']['select_priority']['input_priority']["selected_option"]['value']
+
     say(create_feedback_msg(current_feedback), channel=current_feedback.channel_id)
     say("Сообщение об ошибке записано, спасибо!", channel=current_feedback.channel_id)
     report_table.create(current_feedback)
